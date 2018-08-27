@@ -2,9 +2,10 @@ package example
 
 import java.io.{BufferedReader, FileInputStream, InputStreamReader}
 
+import monix.execution.CancelableFuture
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import monix.reactive.Observable
 
 
@@ -13,46 +14,25 @@ import monix.reactive.Observable
 object Hello extends App {
   implicit val ctx = monix.execution.Scheduler.Implicits.global
 
-  /*
-  val path = java.nio.file.Paths.get("").toAbsolutePath
-  val from = java.nio.file.Paths.get(path + """\test.txt""")
-  println(from)
-
-  ///java.nio.file.Files.readAllLines(from, StandardCharsets.UTF_8)
-    ///.forEach(println(_))
-
-  readAsync(from, 30)
-    .pipeThrough(utf8Decode) // decode utf8, If you need Array[Byte] just skip the decoding
-    .foreach(println(_))
-    // print each char
-*/
+  val id1 = "655f7545"
+  val id2 = "78b85537"
 
   val reader = new BufferedReader(new InputStreamReader(
     new FileInputStream("reduced.csv"), "UTF-8"))
 
-  //  Await.result(Observable.fromLinesReader(reader).foreach(println), scala.concurrent.duration.Duration.Inf)
-  // FIXED !!! issue was a timeout !!!
-  lazy val cf = Observable.fromLinesReader(reader)
-    .drop(1)
-    .foreach{ ln =>
-    val l = ln.split(",")
-    println(s"${l(0).split("T")(1)} ${l(1)} ${l(2)}")
-  }
+  // Creating new DateTime is expensive, just work with strings . split
+  // Skip precision in time & coordinates
+  lazy val cf : CancelableFuture[Unit] =
+    Observable.fromLinesReader(reader)
+      .drop(1)
+      .filter(l => l.endsWith(id1) || l.endsWith(id2))
+      .map{ ln =>
+        val l = ln.split(",")
+        val t = (l(0).split("T|\\.")(1)).split(":")
+        ((t(0), t(1), t(2)), l(1).split("\\.")(0).toInt, l(2).split("\\.")(0).toInt, l(3).toInt, l(4))
+      }
+      .foreach{   println(_)    }
+
   Await.result(cf, Duration.Inf)
 
-    //.transform(mapAsyncOrdered(nonIOParallelism)(println))//.foreach(println)
-
-  //println(Observable.fromLinesReader(reader).countL.runSyncUnsafe(1 hour))
-    //.foreach(println(_))
-
-    //.drop(linesToSkip)
-    //.transform(mapAsyncOrdered(nonIOParallelism)(parseLine))
-
-
 }
-
-/*
-trait Greeting {
-  lazy val greeting: String = "hello"
-}
-*/
