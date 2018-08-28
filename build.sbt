@@ -9,8 +9,8 @@ lazy val root = (project in file(".")).
     name := "coordinates",
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.0.5" % "test",
-      "ch.qos.logback" % "logback-classic" % "1.2.3",
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
+      //"ch.qos.logback" % "logback-classic" % "1.2.3",
+      //"com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
       "io.monix" %% "monix" % "3.0.0-RC1"
     )
   )
