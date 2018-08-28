@@ -2,15 +2,16 @@ package example
 
 import java.io.{BufferedReader, FileInputStream, InputStreamReader}
 
+import com.typesafe.scalalogging.StrictLogging
 import monix.execution.CancelableFuture
 import monix.reactive.Observable
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 
-object Hello extends App {
+object Hello extends StrictLogging with App {
   implicit val ctx = monix.execution.Scheduler.Implicits.global
 
   val id1 = (1, "655f7545")
@@ -25,7 +26,9 @@ object Hello extends App {
       .drop(1)
       .filter(parser.filterPred)
       .map(parser.parse)
-      .collect { case Success(t) => t }
+      .collect {
+        case Success(t) => t
+        case Failure(e) => logger.error(e.toString) }
       //.groupBy{ case (_,_,_,floor,id) => (floor, id) }
       .foreach{   println    }
 
