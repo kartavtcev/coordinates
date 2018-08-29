@@ -12,14 +12,18 @@ import scala.util.{Failure, Success}
 
 
 object Hello extends StrictLogging with App {
+
   implicit val ctx = monix.execution.Scheduler.Implicits.global
+
+  def avg(xs: Iterable[Int]) = xs.sum / xs.count(_=>true)
 
   val id1 = (1, "655f7545")
   val id2 = (2, "78b85537")
   val parser = new Parser(id1, id2)
+  val fileName = "reduced.csv"
 
   val reader = new BufferedReader(new InputStreamReader(
-    new FileInputStream("reduced.csv"), "UTF-8"))
+    new FileInputStream(fileName), "UTF-8"))
 
   lazy val cf : CancelableFuture[Unit] =
     Observable.fromLinesReader(reader)
@@ -27,11 +31,20 @@ object Hello extends StrictLogging with App {
       .filter(parser.filterPred)
       .map(parser.parse)
       .collect {
-        case Success(t) => t
-        case Failure(e) => logger.error(e.toString) }
-      //.groupBy{ case (_,_,_,floor,id) => (floor, id) }
+        case Success(t) => Some(t)
+        case Failure(e) =>
+          logger.error(e.toString)
+          None
+      }
+      .collect{ case Some(t) => t }   // TODO: can't do groupBy as it's a STREAM ! possibly infinite or split by groups of predefined size
+      .consumeWith(Processor.aggregateConsumer)
+      // .runAsync
       .foreach{   println    }
 
+  println("all finished ???")
+
   Await.result(cf, Duration.Inf)
+
+  println("all finished.")
 
 }
