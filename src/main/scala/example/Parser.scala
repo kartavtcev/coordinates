@@ -32,4 +32,4 @@ class Parser(val id1: (Int, String), val id2: (Int, String)) {
   }
 }
 
-//case class Record(id : Int, dateTime: (Int, (Int, Int, Int)), coordinates: (Int, Int, Int))
+case class Record(id : Int, dateTime: (Int, (Int, Int, Int)), coordinates: (Int, Int, Int))

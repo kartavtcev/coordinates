@@ -37,9 +37,10 @@ object Hello extends StrictLogging with App {
           None
       }
       .collect{ case Some(t) => t }   // TODO: can't do groupBy as it's a STREAM ! possibly infinite or split by groups of predefined size
+      .map{ r => Record(r._1, r._2, r._3) }
       .consumeWith(Processor.aggregateConsumer)
       // .runAsync
-      .foreach{   println    }
+      .foreach{   println    }    // 8458 records for 2 IDs: 655f7545, 78b85537
 
   println("all finished ???")
 

@@ -1,13 +1,13 @@
 package example
 
-import monix.eval.Callback
+import monix.eval.{Callback, MVar, Task}
 import monix.execution.Ack.Continue
 import monix.execution.Scheduler
 import monix.execution.cancelables.AssignableCancelable
 import monix.reactive.Consumer
 import monix.reactive.observers.Subscriber
 
-class Processor {    // return FIRST coords intersection on data   "your code should indicate if a meeting has occurred"
+//class Processor(val test:  MVar[Int]) {    // return FIRST coords intersection on data   "your code should indicate if a meeting has occurred"
 
   // first coords
 
@@ -16,6 +16,8 @@ class Processor {    // return FIRST coords intersection on data   "your code sh
   //val startHourDataPerMin: MVar[Array[(Int, (Int, Int, Int))]] = MVar.empty   // array is per-minute ! 0-59 ...
   // count of Hours
   //val lastCoordFromPrevHour: (Int, (Int, Int, Int))
+
+  //val test:  Task[MVar[Int]] //= MVar.empty
 
   // TODO: do 1 min shift for old data in a stream ... while consuming a new hour.
   // TODO: THEN PROCESS AN OLD DATA & MOVE TO NEW ONE. CURRENT = NEW ...
@@ -26,35 +28,40 @@ class Processor {    // return FIRST coords intersection on data   "your code sh
 
   // PROCESS PARALLEL HOURDATA
 
+class Processor(val test:  Task[MVar[Int]]) {
 }
 
 object Processor {
 
   val aggregateConsumer =
-    new Consumer[Tuple3[Int, Tuple2[Int, Tuple3[Int, Int, Int]], Tuple3[Int, Int, Int]], Any] {
+    new Consumer[Record, Any] {
 
       def createSubscriber(cb: Callback[Any], s: Scheduler) = {
-        val out = new Subscriber.Sync[Tuple3[Int, Tuple2[Int, Tuple3[Int, Int, Int]], Tuple3[Int, Int, Int]]] {
+        val out = new Subscriber.Sync[Record] {
           implicit val scheduler = s
-          private var sum = 0L
+          //private var sum = 0L
+          val processor = MVar(0).map(new Processor(_))
 
-          def onNext(elem: Tuple3[Int, Tuple2[Int, Tuple3[Int, Int, Int]], Tuple3[Int, Int, Int]]) = {
-            sum += 1L//elem._1
+          def onNext(elem: Record) = {
+            processor.map(p => p.test.take.map( (v : Int) => p.test.put(v + 1)))
+            /*
+            for {
+              v <- p.test.take
+              _ <- p.test.put(v + 1)
+            }
+            */
             Continue
           }
 
           def onComplete(): Unit = {
-            // We're done so we can signal the final result
-            cb.onSuccess(sum)
+            processor.map( t => t.test.take.map(v => cb.onSuccess(v))) //.runAsync
           }
 
           def onError(ex: Throwable): Unit = {
-            // Error happened, so we signal the error
             cb.onError(ex)
           }
         }
 
-        // return subscriber & a dummy Cancelable as not used
         (out, AssignableCancelable.dummy)
       }
     }
