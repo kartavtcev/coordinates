@@ -89,15 +89,44 @@ class Processor() {
       }
 
       if (recordMin.value >= 10) {
-        // TODO: timeshift of 10 mins check for exchange + ASYNC processing
-        // fill/process "Old" field:  last_id - 60
-        // FOR 2/ALL IDS
+        val id1 = ids(0).get
+        val id2 = ids(1).get
 
+        // TODO: ASYNC processing
+        // fill/process "Old" field:  last_id - 60
+        hasMet(id1, id2)
+
+        ids(0) = Some(PerId(id1.id, id1.next, HourData(Hour(id1.next.hour.value + 1), Map.empty)))
+        ids(1) = Some(PerId(id2.id, id2.next, HourData(Hour(id2.next.hour.value + 1), Map.empty)))
       }
     }
   }
 
-  def hasMet(f: HourData, s: HourData) : Boolean = { throw new NotImplementedError()}
+  // TODO: process in-PARALLEL
+  def hasMet(f: PerId, s: PerId) : Unit = {
+
+    def sharedMinFloorOrderedDistribution(f: immutable.Map[(Min, Floor), AvgXY], s: immutable.Map[(Min, Floor), AvgXY]): List[(Min, Floor)] = {
+      val firstUniqueMin = f.keys.toList.sortBy(_._1.value).groupBy(p => p._1.value).map(g => (g._1, selectFloorByMaxCount(g._2, f)))
+      val secondUniqueMin = s.keys.toList.sortBy(_._1.value).groupBy(p => p._1.value).map(g => (g._1, selectFloorByMaxCount(g._2, s)))
+
+      throw new NotImplementedError()
+    }
+    def selectFloorByMaxCount(groups: List[(Min, Floor)], map: immutable.Map[(Min, Floor), AvgXY]) : (Min, Floor) = {   // Selects the floor with maximum count per minute. Or Any floor if count is equal.
+      groups
+        .map(g => (g, map(g).count))
+        .sortBy(_._2)
+        .last
+        ._1
+    }
+
+    val d1 = sharedMinFloorOrderedDistribution(f.current.perMinCoords, s.current.perMinCoords)
+    val d2 = sharedMinFloorOrderedDistribution(f.next.perMinCoords, s.next.perMinCoords)
+
+    // binary split
+  }
+  // TODO: data structure of meet-ups on complete
+
+
 }
 
 object Processor {
