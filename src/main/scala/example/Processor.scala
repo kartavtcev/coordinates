@@ -49,53 +49,55 @@ class Processor() {
     val recordFloor = Floor(rec.coordinates._3)
 
     if (ids(id).isEmpty) {
-      ids(id) = Some(PerId(id, HourlyData(HourData(recordHour, Map.empty), None), HourlyData(HourData(nextHour, Map.empty), None))) // skipped Date, as it doesn't matter much for the demo data set
+      ids(id) = Some(PerId(id, HourData(recordHour, Map.empty), HourData(nextHour, Map.empty))) // skipped Date, as it doesn't matter much for the demo data set
     }
 
     val perId = ids(id).get
 
-    if (perId.current.now.hour == recordHour) { // Current Hour
+    if (perId.current.hour == recordHour) { // Current Hour
 
-      val map = perId.current.now.perMinCoords
+      val map = perId.current.perMinCoords
       val recordKey = (recordMin, recordFloor)
 
       if (map.contains(recordKey)) { // aggregate coordinates per Minute
 
         val value = map(recordKey)
         val newMap: immutable.Map[(Min, Floor), AvgXY] = (map - recordKey) + (recordKey -> AvgXY(value.xSum + rec.coordinates._1, value.ySum + rec.coordinates._2, value.count + 1))
-        ids(id) = Some(perId.copy(current = perId.current.copy(now = perId.current.now.copy(perMinCoords = newMap)))) // May be use Optics->Lenses functional design pattern here
+        ids(id) = Some(perId.copy(current = perId.current.copy(perMinCoords = newMap))) // May be use Optics->Lenses functional design pattern here
       } else {
         val newMap: immutable.Map[(Min, Floor), AvgXY] = map + (recordKey -> AvgXY(rec.coordinates._1, rec.coordinates._2, 1))
-        ids(id) = Some(perId.copy(current = perId.current.copy(now = perId.current.now.copy(perMinCoords = newMap))))
+        ids(id) = Some(perId.copy(current = perId.current.copy(perMinCoords = newMap)))
       }
 
-    } else if (perId.current.now.hour.value + 1 == recordHour.value) { // Next Hour
+    } else if (perId.current.hour.value + 1 == recordHour.value) { // Next Hour
       /*
       if (perId.next.isEmpty) {
-        ids(id) = Some(perId.copy(next = Some(HourlyData(HourData(recordHour, Map.empty), None))))
+        ids(id) = Some(perId.copy(next = Some(HourData(recordHour, Map.empty), None)))
       }*/
 
-      val map = perId.next.now.perMinCoords
+      val map = perId.next.perMinCoords
       val recordKey = (recordMin, recordFloor)
 
       if (map.contains(recordKey)) { // aggregate coordinates per Minute
 
         val value = map(recordKey)
         val newMap: immutable.Map[(Min, Floor), AvgXY] = (map - recordKey) + (recordKey -> AvgXY(value.xSum + rec.coordinates._1, value.ySum + rec.coordinates._2, value.count + 1))
-        ids(id) = Some(perId.copy(next = perId.next.copy(now = perId.next.now.copy(perMinCoords = newMap)))) // May be use Optics->Lenses functional design pattern here
+        ids(id) = Some(perId.copy(next = perId.next.copy(perMinCoords = newMap))) // May be use Optics->Lenses functional design pattern here
       } else {
         val newMap: immutable.Map[(Min, Floor), AvgXY] = map + (recordKey -> AvgXY(rec.coordinates._1, rec.coordinates._2, 1))
-        ids(id) = Some(perId.copy(next = perId.next.copy(now = perId.next.now.copy(perMinCoords = newMap))))
+        ids(id) = Some(perId.copy(next = perId.next.copy(perMinCoords = newMap)))
       }
 
-      if (recordMin.value >= 10) { // TODO: timeshift of 10 mins check for exchange + ASYNC processing + fill/process "Old" field  FOR 2/ALL IDS
-
+      if (recordMin.value >= 10) {
+        // TODO: timeshift of 10 mins check for exchange + ASYNC processing
+        // fill/process "Old" field:  last_id - 60
+        // FOR 2/ALL IDS
 
       }
     }
   }
 
-  def hasMet(f: HourlyData, s: HourlyData) : Boolean = { throw new NotImplementedError()}
+  def hasMet(f: HourData, s: HourData) : Boolean = { throw new NotImplementedError()}
 }
 
 object Processor {
@@ -128,18 +130,14 @@ object Processor {
     }
 }
 
-case class PerId(id : Int, current: HourlyData, next: HourlyData, streamingDelay: Min = Min(10))
+case class PerId(id : Int, current: HourData, next: HourData, streamingDelay: Min = Min(10))
 
 // iterate throuth hour data: for nearby (hour, min) on the same floor.
 // If floor has changed - skip check for 2 coordinates on different floors
 // Coordinates per min could be missing
 // +10 mins shift for streaming data catch up. => introduce next hour !
 
-case class HourlyData(now: HourData, old: Option[LastCoordFromOldHour])
-
 case class HourData(hour: Hour, perMinCoords: immutable.Map[(Min, Floor), AvgXY])
-
-case class LastCoordFromOldHour(coord: Coordinate)
 
 case class Hour(value: Int)
 case class Floor(value: Int)
