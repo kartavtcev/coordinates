@@ -33,36 +33,65 @@ class Processor() {
 
   /* TODO: I spent 2 days trying to figure out,
    how to replace "var" / Array (aka mutable Data Structure from Java) id1, id2 with "val" Task[MVar[F]] (Monix) or Ref[IO, F] (Cats).
-   Failed so far to restructure code for Task/IO (deferred execution + effects). May be next time. */
+   Failed (run out of time) so far to restructure code for Task/IO (deferred execution + effects). May be next time.
+   Because I use Monix Synchronous Subscriber & subscribed to single Observable, var/Array mutable are OKay here (Pure FP fans would disagree).
+   But having Monix Task could have allowed more parallel computing. */
 
-  val ids: Array[Option[PerId]] = Array(None, None)
+  var ids: Array[Option[PerId]] = Array(None, None)
   //var first : Option[PerId] = None
   //var second: Option[PerId] = None
 
-  def onNext(elem: Record): Unit = {
-    val id = elem.id - 1
-    val recordHour = elem.dateTime._2._1
+  def onNext(rec: Record): Unit = {
+    val id = rec.id - 1
+    val recordHour = Hour(rec.dateTime._2._1)
+    val nextHour = Hour(rec.dateTime._2._1 + 1)
+    val recordMin = Min(rec.dateTime._2._2)
+    val recordFloor = Floor(rec.coordinates._3)
 
     if (ids(id).isEmpty) {
-      ids(id) = Some(PerId(id, HourlyData(HourData(Hour(recordHour), Map.empty), None), None)) // skipped Date, as it doesn't matter much for the demo data set
+      ids(id) = Some(PerId(id, HourlyData(HourData(recordHour, Map.empty), None), HourlyData(HourData(nextHour, Map.empty), None))) // skipped Date, as it doesn't matter much for the demo data set
     }
 
     val perId = ids(id).get
 
-    if (perId.current.now.hour.value == recordHour) {
-      // TODO:
+    if (perId.current.now.hour == recordHour) { // Current Hour
 
-    } else if (perId.current.now.hour.value < recordHour) {
+      val map = perId.current.now.perMinCoords
+      val recordKey = (recordMin, recordFloor)
+
+      if (map.contains(recordKey)) { // aggregate coordinates per Minute
+
+        val value = map(recordKey)
+        val newMap: immutable.Map[(Min, Floor), AvgXY] = (map - recordKey) + (recordKey -> AvgXY(value.xSum + rec.coordinates._1, value.ySum + rec.coordinates._2, value.count + 1))
+        ids(id) = Some(perId.copy(current = perId.current.copy(now = perId.current.now.copy(perMinCoords = newMap)))) // May be use Optics->Lenses functional design pattern here
+      } else {
+        val newMap: immutable.Map[(Min, Floor), AvgXY] = map + (recordKey -> AvgXY(rec.coordinates._1, rec.coordinates._2, 1))
+        ids(id) = Some(perId.copy(current = perId.current.copy(now = perId.current.now.copy(perMinCoords = newMap))))
+      }
+
+    } else if (perId.current.now.hour.value + 1 == recordHour.value) { // Next Hour
+      /*
       if (perId.next.isEmpty) {
-        ids(id) = Some(ids(id).get.copy(next = Some(HourlyData(HourData(Hour(recordHour), Map.empty), None))))
+        ids(id) = Some(perId.copy(next = Some(HourlyData(HourData(recordHour, Map.empty), None))))
+      }*/
+
+      val map = perId.next.now.perMinCoords
+      val recordKey = (recordMin, recordFloor)
+
+      if (map.contains(recordKey)) { // aggregate coordinates per Minute
+
+        val value = map(recordKey)
+        val newMap: immutable.Map[(Min, Floor), AvgXY] = (map - recordKey) + (recordKey -> AvgXY(value.xSum + rec.coordinates._1, value.ySum + rec.coordinates._2, value.count + 1))
+        ids(id) = Some(perId.copy(next = perId.next.copy(now = perId.next.now.copy(perMinCoords = newMap)))) // May be use Optics->Lenses functional design pattern here
+      } else {
+        val newMap: immutable.Map[(Min, Floor), AvgXY] = map + (recordKey -> AvgXY(rec.coordinates._1, rec.coordinates._2, 1))
+        ids(id) = Some(perId.copy(next = perId.next.copy(now = perId.next.now.copy(perMinCoords = newMap))))
       }
 
-      val recordMin = elem.dateTime._2._2
-      if (recordMin >= 10) {
-        // TODO: timeshift of 10 mins check for exchange + ASYNC processing
-      }
-      // TODO:
+      if (recordMin.value >= 10) { // TODO: timeshift of 10 mins check for exchange + ASYNC processing + fill/process "Old" field  FOR 2/ALL IDS
 
+
+      }
     }
   }
 
@@ -75,7 +104,7 @@ object Processor {
     new Consumer[Record, Any] {
 
       def createSubscriber(cb: Callback[Any], s: Scheduler) = {
-        val out = new Subscriber.Sync[Record] { // Synchronous context, subscribed to single Observable
+        val out = new Subscriber.Sync[Record] {
           implicit val scheduler = s
           private var sum = 0L  //
           val processor = new Processor()
@@ -99,7 +128,7 @@ object Processor {
     }
 }
 
-case class PerId(id : Int, current: HourlyData, next: Option[HourlyData], streamingDelay: Min = Min(10))
+case class PerId(id : Int, current: HourlyData, next: HourlyData, streamingDelay: Min = Min(10))
 
 // iterate throuth hour data: for nearby (hour, min) on the same floor.
 // If floor has changed - skip check for 2 coordinates on different floors
