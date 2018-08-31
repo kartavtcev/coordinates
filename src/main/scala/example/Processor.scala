@@ -103,15 +103,24 @@ class Processor() {
   }
 
   // TODO: process in-PARALLEL
-  def hasMet(f: PerId, s: PerId) : Unit = {
+  def hasMet(f: PerId, s: PerId): Unit = {
 
-    def sharedMinFloorOrderedDistribution(f: immutable.Map[(Min, Floor), AvgXY], s: immutable.Map[(Min, Floor), AvgXY]): List[(Min, Floor)] = {
-      val firstUniqueMin = f.keys.toList.sortBy(_._1.value).groupBy(p => p._1.value).map(g => (g._1, selectFloorByMaxCount(g._2, f)))
-      val secondUniqueMin = s.keys.toList.sortBy(_._1.value).groupBy(p => p._1.value).map(g => (g._1, selectFloorByMaxCount(g._2, s)))
+    def sharedMinuteFloorOrderedDistribution(f: immutable.Map[(Min, Floor), AvgXY], s: immutable.Map[(Min, Floor), AvgXY]): List[(Min, Floor)] = {
+      val firstUniqueMin: List[(Min, Floor)] = f.keys.toList
+        .sortBy(_._1.value)
+        .groupBy(p => p._1.value)
+        .map(g => selectFloorByMaxCount(g._2, f))
+        .toList
+      val secondUniqueMin: List[(Min, Floor)] = s.keys.toList
+        .sortBy(_._1.value)
+        .groupBy(p => p._1.value)
+        .map(g => selectFloorByMaxCount(g._2, s))
+        .toList
 
       throw new NotImplementedError()
     }
-    def selectFloorByMaxCount(groups: List[(Min, Floor)], map: immutable.Map[(Min, Floor), AvgXY]) : (Min, Floor) = {   // Selects the floor with maximum count per minute. Or Any floor if count is equal.
+
+    def selectFloorByMaxCount(groups: List[(Min, Floor)], map: immutable.Map[(Min, Floor), AvgXY]): (Min, Floor) = { // Selects the floor with maximum count per minute. Or Any floor if count is equal.
       groups
         .map(g => (g, map(g).count))
         .sortBy(_._2)
@@ -119,11 +128,39 @@ class Processor() {
         ._1
     }
 
-    val d1 = sharedMinFloorOrderedDistribution(f.current.perMinCoords, s.current.perMinCoords)
-    val d2 = sharedMinFloorOrderedDistribution(f.next.perMinCoords, s.next.perMinCoords)
+    def findCorrespondingTimeAndEqualFloorIntervals(first: List[(Min, Floor)], second: List[(Min, Floor)]): List[((Min, Floor), (Min, Floor))] = {
 
+      def loop(range: List[Int], first: List[(Min, Floor)], second: List[(Min, Floor)]): List[((Min, Floor), (Min, Floor))] = {
+        val v1: List[(Min, Floor)] = first.filter(fv => range.exists(_ == fv._1.value))
+        val v2: List[(Min, Floor)] = second.filter(sv => range.exists(_ == sv._1.value))
+
+        throw new NotImplementedError()
+        /*
+        if( && ) {
+          val median = range.length / 2
+          loop()
+        } else {
+
+        }
+      }
+
+      loop((0 to 59).toList, first, second)
+        .filter { case ((_, floor1),(_, floor2)) => floor1 == floor2 }
+      // first: match Minutes
+      // second: select equal Floors on matched mins
+      */
+      }
+
+
+      val d1 = sharedMinuteFloorOrderedDistribution(f.current.perMinCoords, s.current.perMinCoords)
+      val d2 = sharedMinuteFloorOrderedDistribution(f.next.perMinCoords, s.next.perMinCoords)
+      throw new NotImplementedError()
+
+
+    }
     // binary split
   }
+
   // TODO: data structure of meet-ups on complete
 
 
