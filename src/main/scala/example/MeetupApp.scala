@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 
-object Hello extends StrictLogging with App {
+object MeetupApp extends StrictLogging with App {
 
   val t0 = System.nanoTime()
 
