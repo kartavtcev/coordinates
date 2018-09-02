@@ -18,15 +18,15 @@ object Algorithm {
     }
 
     def selectFloorByMaxCount(groups: List[(Min, Floor)],
-                              map: immutable.Map[(Min, Floor), AvgXY]): (Min, Floor) = { // Selects the floor with maximum count per minute. Or Any floor if count is equal.
+                              m: immutable.Map[(Min, Floor), AvgXY]): (Min, Floor) = { // Selects the floor with maximum count per minute. Or Any floor if count is equal.
       groups
-        .map(g => (g, map(g).count))
+        .map(g => (g, m(g).count))
         .sortBy(_._2)
         .last
         ._1
     }
 
-    def findCorrespondingTimeAndEqualFloorIntervals(first: List[(Min, Floor)],
+    def sparsenessAndEqualFloorIntervals(first: List[(Min, Floor)],
                                                     second: List[(Min, Floor)],
                                                     timing: HourTiming): List[((Min, Floor), (Min, Floor))] = {
 
@@ -89,7 +89,7 @@ object Algorithm {
           val xMed = (x1 + x2) / 2.0
           val yMed = (y1 + y2) / 2.0
 
-          meets = meets :+ Meet((firstPerId.hours(0).hour, min), Coordinate(xMed.toInt, yMed.toInt, floor))
+          meets = meets :+ Meet((firstPerId.hours(0).hour, min), Coordinate(xMed.toInt, yMed.toInt, floor))   // TODO: FAIL
         }
       }
       meets
@@ -98,8 +98,8 @@ object Algorithm {
     val d1 = sharedMinuteFloorOrderedDistribution(firstPerId.hours(0).perMinCoords, secondPerId.hours(0).perMinCoords)
     val d2 = sharedMinuteFloorOrderedDistribution(firstPerId.hours(1).perMinCoords, secondPerId.hours(1).perMinCoords)
 
-    val distanceCheckBase = findCorrespondingTimeAndEqualFloorIntervals(d1._1, d1._2, Current)
-    val distanceCheckNextSingle = findCorrespondingTimeAndEqualFloorIntervals(d2._1, d2._2, Next)
+    val distanceCheckBase = sparsenessAndEqualFloorIntervals(d1._1, d1._2, Current)
+    val distanceCheckNextSingle = List[((Min, Floor), (Min, Floor))]() // sparsenessAndEqualFloorIntervals(d2._1, d2._2, Next)
 
     var distanceCheckCoords : List[((Min, Floor), AvgXY, AvgXY)] =
       distanceCheckBase.map { case (key1, key2) => (key1, firstPerId.hours(0).perMinCoords(key1), secondPerId.hours(0).perMinCoords(key2)) }   // + HOUR

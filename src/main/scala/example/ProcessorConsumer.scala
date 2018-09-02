@@ -23,7 +23,7 @@ object ProcessorConsumer {
 
           def onComplete(): Unit = {  // callback . onSuccess could only be called once. This is the only blocker for real time streaming.
 
-            processor.findMeetupsAsync foreach { _ =>
+            processor.findMeetupsAsync foreach { _ =>   // foreach runs Task async
               if (!processor.getMeetUps.isEmpty) {
                 cb.onSuccess(Right(processor.getMeetUps))
               } else {
