@@ -5,19 +5,19 @@ import scala.collection.immutable
 object Algorithm {
   def hasMet(firstPerId: PerId, secondPerId: PerId) (meetUpDistance : Int, nextHourThreshold: Int): List[Meet] = {
 
-    def sharedMinuteFloorOrderedDistribution(f: immutable.Map[(Min, Floor), AvgXY],
+    def singleFloorPerOrderedMinute(f: immutable.Map[(Min, Floor), AvgXY],
                                              s: immutable.Map[(Min, Floor), AvgXY]): (List[(Min, Floor)], List[(Min, Floor)]) = {
       def uniqueMinutes(m: immutable.Map[(Min, Floor), AvgXY]) : List[(Min, Floor)] =
         m.keys.toList
           .sortBy(_._1.value)
           .groupBy(_._1.value)
-          .map(g => selectFloorByMaxCount(g._2, m))
+          .map(g => floorByMaxCount(g._2, m))
           .toList
 
       (uniqueMinutes(f), uniqueMinutes(s))
     }
 
-    def selectFloorByMaxCount(groups: List[(Min, Floor)],
+    def floorByMaxCount(groups: List[(Min, Floor)],
                               m: immutable.Map[(Min, Floor), AvgXY]): (Min, Floor) = { // Selects the floor with maximum count per minute. Or Any floor if count is equal.
       groups
         .map(g => (g, m(g).count))
@@ -89,25 +89,16 @@ object Algorithm {
           val xMed = (x1 + x2) / 2.0
           val yMed = (y1 + y2) / 2.0
 
-          meets = meets :+ Meet((firstPerId.hours(0).hour, min), Coordinate(xMed.toInt, yMed.toInt, floor))   // TODO: FAIL
+          meets = meets :+ Meet((firstPerId.hours(0).hour, min), Coordinate(xMed.toInt, yMed.toInt, floor))
         }
       }
       meets
     }
 
-    val d1 = sharedMinuteFloorOrderedDistribution(firstPerId.hours(0).perMinCoords, secondPerId.hours(0).perMinCoords)
-    val d2 = sharedMinuteFloorOrderedDistribution(firstPerId.hours(1).perMinCoords, secondPerId.hours(1).perMinCoords)
-
-    val distanceCheckBase = sparsenessAndEqualFloorIntervals(d1._1, d1._2, Current)
-    val distanceCheckNextSingle = List[((Min, Floor), (Min, Floor))]() // sparsenessAndEqualFloorIntervals(d2._1, d2._2, Next)
-
-    var distanceCheckCoords : List[((Min, Floor), AvgXY, AvgXY)] =
-      distanceCheckBase.map { case (key1, key2) => (key1, firstPerId.hours(0).perMinCoords(key1), secondPerId.hours(0).perMinCoords(key2)) }   // + HOUR
-    if(!distanceCheckNextSingle.isEmpty) {
-      val distanceNextSingle =
-        distanceCheckNextSingle.map { case (key1, key2) => (key1, firstPerId.hours(1).perMinCoords(key1), secondPerId.hours(1).perMinCoords(key2)) } .head
-      distanceCheckCoords = distanceCheckCoords :+ distanceNextSingle
-    }
+    val reducedFloors = singleFloorPerOrderedMinute(firstPerId.hours(0).perMinCoords, secondPerId.hours(0).perMinCoords)
+    val distanceCheckCoords : List[((Min, Floor), AvgXY, AvgXY)] =
+      sparsenessAndEqualFloorIntervals(reducedFloors._1, reducedFloors._2, Current)
+        .map { case (key1, key2) => (key1, firstPerId.hours(0).perMinCoords(key1), secondPerId.hours(0).perMinCoords(key2)) }
 
     distanceCheck(distanceCheckCoords)
   }
