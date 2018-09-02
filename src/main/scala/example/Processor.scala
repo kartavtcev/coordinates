@@ -12,11 +12,13 @@ class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLoggi
    Because I use Monix Synchronous Subscriber & subscribed to single Observable, var/Array mutable are OKay here (Pure FP fans would disagree).
    But having Monix Task could have allowed more parallel computing. */
 
-  var ids: Array[Option[PerId]] = Array(None, None)
+  private var ids: Array[Option[PerId]] = Array(None, None)
   //var first : Option[PerId] = None
   //var second: Option[PerId] = None
 
-  var meetups: List[Meet] = List.empty
+  private var meetups: List[Meet] = List.empty
+
+  def getMeetUps = meetups
 
   def onNext(rec: Record): Unit = {
     val id = rec.id - 1
@@ -80,7 +82,8 @@ class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLoggi
     val id2 = ids(1).get
 
     // asynchronously, run deferred task just like eager Future, because Monix.
-      Task { Algorithm.hasMet(id1, id2)(Processor.meetUpDistance, Processor.nextHourThreshold) } map { m => meetups = meetups ::: m }
+    Task { Algorithm.hasMet(id1, id2)(Processor.meetUpDistance, Processor.nextHourThreshold) }
+      .map { m => meetups = meetups ::: m }
   }
 }
 

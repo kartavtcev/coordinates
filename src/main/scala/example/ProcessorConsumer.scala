@@ -14,7 +14,7 @@ object ProcessorConsumer {
       def createSubscriber(cb: Callback[Either[String, List[Meet]]], s: Scheduler) = {
         val out = new Subscriber.Sync[Record] {
           implicit val scheduler = s
-          val processor = new Processor()
+          val processor = new Processor
 
           def onNext(elem: Record) = {
             processor.onNext(elem)
@@ -24,8 +24,8 @@ object ProcessorConsumer {
           def onComplete(): Unit = {
 
             processor.findMeetupsAsync foreach { _ =>
-              if (!processor.meetups.isEmpty) {
-                cb.onSuccess(Right(processor.meetups))
+              if (!processor.getMeetUps.isEmpty) {
+                cb.onSuccess(Right(processor.getMeetUps))
               } else {
                 cb.onSuccess(Left("No meetups found."))
               }
