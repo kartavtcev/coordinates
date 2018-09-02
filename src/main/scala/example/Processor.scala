@@ -70,7 +70,7 @@ class Processor() extends StrictLogging {
         ids(id) = Some(perId.copy(next = perId.next.copy(perMinCoords = newMap)))
       }
 
-      if (recordMin.value >= 10) {
+      if (recordMin.value >= Processor.nextHourThreshold) {
         val id1 = ids(0).get
         val id2 = ids(1).get
 
@@ -140,7 +140,7 @@ class Processor() extends StrictLogging {
 
       timing match {
         case Current => loop((0 to 59).toList, first, second)
-        case Next => loop((0 to 10).toList, first, second)
+        case Next => loop((0 to Processor.nextHourThreshold).toList, first, second)
       }
     }
 
@@ -201,11 +201,12 @@ class Processor() extends StrictLogging {
 
 object Processor {
   val meetUpDistance = 5 // meters
+  val nextHourThreshold = 10 // minutes
 
   val aggregateConsumer =
-    new Consumer[Record, List[Meet]] {
+    new Consumer[Record, Either[String, List[Meet]]] {
 
-      def createSubscriber(cb: Callback[List[Meet]], s: Scheduler) = {
+      def createSubscriber(cb: Callback[Either[String, List[Meet]]], s: Scheduler) = {
         val out = new Subscriber.Sync[Record] {
           implicit val scheduler = s
           val processor = new Processor()
@@ -217,7 +218,12 @@ object Processor {
 
           def onComplete(): Unit = {
             // TODO: LAST HOUR PROCESS !!!
-            cb.onSuccess(processor.meetUpsData)
+
+            if(!processor.meetUpsData.isEmpty) {
+              cb.onSuccess(Right(processor.meetUpsData))
+            } else {
+              cb.onSuccess(Left("No meetups found."))
+            }
           }
 
           def onError(ex: Throwable): Unit = {
