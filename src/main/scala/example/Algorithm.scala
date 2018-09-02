@@ -93,10 +93,10 @@ object Algorithm {
     }
 
     val reducedFloors = singleFloorPerOrderedMinute(firstId, secondId)    // secondId.hours(0).perMinCoords
-    val distanceCheckCoords : List[((Min, Floor), AvgXY, AvgXY)] =
+    val sparsened : List[((Min, Floor), AvgXY, AvgXY)] =
       sparsenessAndEqualFloorIntervals(reducedFloors._1, reducedFloors._2)
         .map { case (key1, key2) => (key1, firstId(key1), secondId(key2)) }
 
-    distanceCheck(distanceCheckCoords)
+    distanceCheck(sparsened)
   }
 }

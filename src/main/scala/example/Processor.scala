@@ -96,10 +96,6 @@ object Processor {
 case class PerId(hours: List[HourData])
 case class HourData(hour: Hour, perMinCoords: immutable.Map[(Min, Floor), AvgXY])
 
-sealed trait HourTiming
-object Current extends HourTiming
-object Next extends HourTiming
-
 case class Hour(value: Int)
 case class Floor(value: Int)
 case class Min(value: Int)
