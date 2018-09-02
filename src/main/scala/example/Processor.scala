@@ -65,7 +65,7 @@ class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLoggi
 
       if (recordMin.value >= Processor.nextHourThreshold) {
 
-        findMeetupsAsync runAsync //foreach(v => meetups = meetups ::: v)
+        findMeetupsAsync runAsync
 
         val id1 = ids(0).get
         val id2 = ids(1).get
@@ -80,7 +80,7 @@ class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLoggi
     val id2 = ids(1).get
 
     // asynchronously, run deferred task just like eager Future, because Monix.
-      Task { Algorithm.hasMet(id1, id2) } map { m => meetups = meetups ::: m }
+      Task { Algorithm.hasMet(id1, id2)(Processor.meetUpDistance, Processor.nextHourThreshold) } map { m => meetups = meetups ::: m }
   }
 }
 

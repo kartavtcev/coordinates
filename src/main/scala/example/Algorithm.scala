@@ -3,7 +3,7 @@ package example
 import scala.collection.immutable
 
 object Algorithm {
-  def hasMet(firstPerId: PerId, secondPerId: PerId): List[Meet] = {
+  def hasMet(firstPerId: PerId, secondPerId: PerId) (meetUpDistance : Int, nextHourThreshold: Int): List[Meet] = {
 
     def sharedMinuteFloorOrderedDistribution(f: immutable.Map[(Min, Floor), AvgXY],
                                              s: immutable.Map[(Min, Floor), AvgXY]): (List[(Min, Floor)], List[(Min, Floor)]) = {
@@ -59,13 +59,13 @@ object Algorithm {
 
       timing match {
         case Current => loop((0 to 59).toList, first, second)
-        case Next => loop((0 to Processor.nextHourThreshold).toList, first, second)
+        case Next => loop((0 to nextHourThreshold).toList, first, second)
       }
     }
 
     def distanceCheck(coords: List[((Min, Floor), AvgXY, AvgXY)]): List[Meet] = {
       def isDistanceMeet(x1: Double, y1: Double, x2: Double, y2: Double) : Boolean = {
-        scala.math.pow((x2 - x1), 2) + scala.math.pow((y2 - y1), 2) <= scala.math.pow(Processor.meetUpDistance, 2)
+        scala.math.pow((x2 - x1), 2) + scala.math.pow((y2 - y1), 2) <= scala.math.pow(meetUpDistance, 2)
       }
 
       var meets: List[Meet] = List.empty
