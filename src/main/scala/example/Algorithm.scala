@@ -7,18 +7,14 @@ object Algorithm {
 
     def sharedMinuteFloorOrderedDistribution(f: immutable.Map[(Min, Floor), AvgXY],
                                              s: immutable.Map[(Min, Floor), AvgXY]): (List[(Min, Floor)], List[(Min, Floor)]) = {
-      val firstUniqueMin: List[(Min, Floor)] = f.keys.toList
-        .sortBy(_._1.value)
-        .groupBy(p => p._1.value)
-        .map(g => selectFloorByMaxCount(g._2, f))
-        .toList
-      val secondUniqueMin: List[(Min, Floor)] = s.keys.toList
-        .sortBy(_._1.value)
-        .groupBy(p => p._1.value)
-        .map(g => selectFloorByMaxCount(g._2, s))
-        .toList
+      def uniqueMinutes(m: immutable.Map[(Min, Floor), AvgXY]) : List[(Min, Floor)] =
+        m.keys.toList
+          .sortBy(_._1.value)
+          .groupBy(_._1.value)
+          .map(g => selectFloorByMaxCount(g._2, m))
+          .toList
 
-      (firstUniqueMin, secondUniqueMin)
+      (uniqueMinutes(f), uniqueMinutes(s))
     }
 
     def selectFloorByMaxCount(groups: List[(Min, Floor)],
@@ -93,23 +89,23 @@ object Algorithm {
           val xMed = (x1 + x2) / 2.0
           val yMed = (y1 + y2) / 2.0
 
-          meets = meets :+ Meet((firstPerId.current.hour, min), Coordinate(xMed.toInt, yMed.toInt, floor))
+          meets = meets :+ Meet((firstPerId.hours(0).hour, min), Coordinate(xMed.toInt, yMed.toInt, floor))
         }
       }
       meets
     }
 
-    val d1 = sharedMinuteFloorOrderedDistribution(firstPerId.current.perMinCoords, secondPerId.current.perMinCoords)
-    val d2 = sharedMinuteFloorOrderedDistribution(firstPerId.next.perMinCoords, secondPerId.next.perMinCoords)
+    val d1 = sharedMinuteFloorOrderedDistribution(firstPerId.hours(0).perMinCoords, secondPerId.hours(0).perMinCoords)
+    val d2 = sharedMinuteFloorOrderedDistribution(firstPerId.hours(1).perMinCoords, secondPerId.hours(1).perMinCoords)
 
     val distanceCheckBase = findCorrespondingTimeAndEqualFloorIntervals(d1._1, d1._2, Current)
     val distanceCheckNextSingle = findCorrespondingTimeAndEqualFloorIntervals(d2._1, d2._2, Next)
 
     var distanceCheckCoords : List[((Min, Floor), AvgXY, AvgXY)] =
-      distanceCheckBase.map { case (key1, key2) => (key1, firstPerId.current.perMinCoords(key1), secondPerId.current.perMinCoords(key2)) }   // + HOUR
+      distanceCheckBase.map { case (key1, key2) => (key1, firstPerId.hours(0).perMinCoords(key1), secondPerId.hours(0).perMinCoords(key2)) }   // + HOUR
     if(!distanceCheckNextSingle.isEmpty) {
       val distanceNextSingle =
-        distanceCheckNextSingle.map { case (key1, key2) => (key1, firstPerId.next.perMinCoords(key1), secondPerId.next.perMinCoords(key2)) } .head
+        distanceCheckNextSingle.map { case (key1, key2) => (key1, firstPerId.hours(1).perMinCoords(key1), secondPerId.hours(1).perMinCoords(key2)) } .head
       distanceCheckCoords = distanceCheckCoords :+ distanceNextSingle
     }
 
