@@ -22,6 +22,8 @@ object Hello extends StrictLogging with App {
   val parser = new Parser(id1, id2)
   val fileName = "reduced.csv"
 
+  val t0 = System.nanoTime()
+
   val reader = new BufferedReader(new InputStreamReader(
     new FileInputStream(fileName), "UTF-8"))
 
@@ -41,10 +43,11 @@ object Hello extends StrictLogging with App {
       // .runAsync
       .foreach{ list => list.foreach(println) }
 
-  println("all finished ???")
-
   Await.result(cf, Duration.Inf)
 
-  println("all finished.")
+  val t1 = System.nanoTime()
+  println(s"Elapsed run-time: ${(t1-t0)/1000000} ms")
+
+  //println("all finished.")
 
 }

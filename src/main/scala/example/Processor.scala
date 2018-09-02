@@ -1,15 +1,17 @@
 package example
 
-import monix.eval.Callback
+import com.typesafe.scalalogging.StrictLogging
+import monix.eval.{Callback, Task}
 import monix.execution.Ack.Continue
 import monix.execution.Scheduler
+import monix.execution.Scheduler.Implicits.global
 import monix.execution.cancelables.AssignableCancelable
 import monix.reactive.Consumer
 import monix.reactive.observers.Subscriber
 
 import scala.collection.immutable
 
-class Processor() {
+class Processor() extends StrictLogging {
 
   /* TODO: I spent 2 days trying to figure out,
    how to replace "var" / Array (aka mutable Data Structure from Java) id1, id2 with "val" Task[MVar[F]] (Monix) or Ref[IO, F] (Cats).
@@ -72,8 +74,8 @@ class Processor() {
         val id1 = ids(0).get
         val id2 = ids(1).get
 
-        // TODO: ASYNC processing
-        meetUpsData = meetUpsData ::: hasMet(id1, id2)
+        // asynchronously, run deferred task just like eager Future, because Monix.
+        Task { hasMet(id1, id2 )} foreach(v => meetUpsData = meetUpsData ::: v)
 
         ids(0) = Some(PerId(id1.id, id1.next, HourData(Hour(id1.next.hour.value + 1), Map.empty)))
         ids(1) = Some(PerId(id2.id, id2.next, HourData(Hour(id2.next.hour.value + 1), Map.empty)))
@@ -110,7 +112,8 @@ class Processor() {
     }
 
     def findCorrespondingTimeAndEqualFloorIntervals(first: List[(Min, Floor)],
-                                                    second: List[(Min, Floor)]): List[((Min, Floor), (Min, Floor))] = {
+                                                    second: List[(Min, Floor)],
+                                                    timing: HourTiming): List[((Min, Floor), (Min, Floor))] = {
 
       def loop(range: List[Int], first: List[(Min, Floor)], second: List[(Min, Floor)]): List[((Min, Floor), (Min, Floor))] = {
         val v1: List[(Min, Floor)] = first.filter(fv => range.exists(_ == fv._1.value))
@@ -135,7 +138,10 @@ class Processor() {
         } else List.empty
       }
 
-      loop((0 to 59).toList, first, second)
+      timing match {
+        case Current => loop((0 to 59).toList, first, second)
+        case Next => loop((0 to 10).toList, first, second)
+      }
     }
 
     def distanceCheck(coords: List[((Min, Floor), AvgXY, AvgXY)]): List[Meet] = {
@@ -162,6 +168,9 @@ class Processor() {
         val y2 = y2Sum.toDouble / count2.toDouble
 
         if(isDistanceMeet(x1, y1, x2, y2)) {
+
+          /*println(s"1: ($x1,$y1); 2: ($x2,$y2)")*/
+
           val xMed = (x1 + x2) / 2.0
           val yMed = (y1 + y2) / 2.0
 
@@ -174,8 +183,8 @@ class Processor() {
     val d1 = sharedMinuteFloorOrderedDistribution(firstPerId.current.perMinCoords, secondPerId.current.perMinCoords)
     val d2 = sharedMinuteFloorOrderedDistribution(firstPerId.next.perMinCoords, secondPerId.next.perMinCoords)
 
-    val distanceCheckBase = findCorrespondingTimeAndEqualFloorIntervals(d1._1, d1._2)
-    val distanceCheckNextSingle = findCorrespondingTimeAndEqualFloorIntervals(d2._1, d2._2)
+    val distanceCheckBase = findCorrespondingTimeAndEqualFloorIntervals(d1._1, d1._2, Current)
+    val distanceCheckNextSingle = findCorrespondingTimeAndEqualFloorIntervals(d2._1, d2._2, Next)
 
     var distanceCheckCoords : List[((Min, Floor), AvgXY, AvgXY)] =
       distanceCheckBase.map { case (key1, key2) => (key1, firstPerId.current.perMinCoords(key1), secondPerId.current.perMinCoords(key2)) }   // + HOUR
@@ -223,6 +232,10 @@ object Processor {
 
 case class PerId(id : Int, current: HourData, next: HourData, streamingDelay: Min = Min(10))
 case class HourData(hour: Hour, perMinCoords: immutable.Map[(Min, Floor), AvgXY])
+
+sealed trait HourTiming
+object Current extends HourTiming
+object Next extends HourTiming
 
 case class Hour(value: Int)
 case class Floor(value: Int)
