@@ -3,7 +3,8 @@ package example
 import scala.collection.immutable
 
 object Algorithm {
-  def hasMet(firstPerId: PerId, secondPerId: PerId) (meetUpDistance : Int, nextHourThreshold: Int): List[Meet] = {
+  def hasMet(hour: Hour, firstId: immutable.Map[(Min, Floor), AvgXY], secondId: immutable.Map[(Min, Floor), AvgXY])
+            (meetUpDistance : Int): List[Meet] = {
 
     def singleFloorPerOrderedMinute(f: immutable.Map[(Min, Floor), AvgXY],
                                              s: immutable.Map[(Min, Floor), AvgXY]): (List[(Min, Floor)], List[(Min, Floor)]) = {
@@ -27,8 +28,7 @@ object Algorithm {
     }
 
     def sparsenessAndEqualFloorIntervals(first: List[(Min, Floor)],
-                                                    second: List[(Min, Floor)],
-                                                    timing: HourTiming): List[((Min, Floor), (Min, Floor))] = {
+                                                    second: List[(Min, Floor)]): List[((Min, Floor), (Min, Floor))] = {
 
       def loop(range: List[Int], first: List[(Min, Floor)], second: List[(Min, Floor)]): List[((Min, Floor), (Min, Floor))] = {
         val v1: List[(Min, Floor)] = first.filter(fv => range.exists(_ == fv._1.value))
@@ -53,10 +53,7 @@ object Algorithm {
         } else List.empty
       }
 
-      timing match {
-        case Current => loop((0 to 59).toList, first, second)
-        case Next => loop((0 to nextHourThreshold).toList, first, second)
-      }
+      loop((0 to 59).toList, first, second)
     }
 
     def distanceCheck(coords: List[((Min, Floor), AvgXY, AvgXY)]): List[Meet] = {
@@ -89,16 +86,16 @@ object Algorithm {
           val xMed = (x1 + x2) / 2.0
           val yMed = (y1 + y2) / 2.0
 
-          meets = meets :+ Meet((firstPerId.hours(0).hour, min), Coordinate(xMed.toInt, yMed.toInt, floor))
+          meets = meets :+ Meet((hour, min), Coordinate(xMed.toInt, yMed.toInt, floor))
         }
       }
       meets
     }
 
-    val reducedFloors = singleFloorPerOrderedMinute(firstPerId.hours(0).perMinCoords, secondPerId.hours(0).perMinCoords)
+    val reducedFloors = singleFloorPerOrderedMinute(firstId, secondId)    // secondId.hours(0).perMinCoords
     val distanceCheckCoords : List[((Min, Floor), AvgXY, AvgXY)] =
-      sparsenessAndEqualFloorIntervals(reducedFloors._1, reducedFloors._2, Current)
-        .map { case (key1, key2) => (key1, firstPerId.hours(0).perMinCoords(key1), secondPerId.hours(0).perMinCoords(key2)) }
+      sparsenessAndEqualFloorIntervals(reducedFloors._1, reducedFloors._2)
+        .map { case (key1, key2) => (key1, firstId(key1), secondId(key2)) }
 
     distanceCheck(distanceCheckCoords)
   }

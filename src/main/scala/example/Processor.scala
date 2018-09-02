@@ -83,7 +83,7 @@ class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLoggi
     val id1 = ids(0).get
     val id2 = ids(1).get
 
-    Task { Algorithm.hasMet(id1, id2)(Processor.meetUpDistance, Processor.nextHourThreshold) }
+    Task { Algorithm.hasMet(id1.hours(0).hour, id1.hours(0).perMinCoords, id2.hours(0).perMinCoords)(Processor.meetUpDistance) }
       .map { m => meetups = meetups ::: m }
   }
 }
