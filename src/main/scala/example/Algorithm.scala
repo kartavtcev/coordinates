@@ -27,6 +27,7 @@ object Algorithm {
         ._1
     }
 
+    // TODO: calculate median not by index, but by # of elements
     def sparsenessAndEqualFloorIntervals(first: List[(Min, Floor)],
                                                     second: List[(Min, Floor)]): List[((Min, Floor), (Min, Floor))] = {
 
@@ -81,7 +82,7 @@ object Algorithm {
 
         if(isDistanceMeet(x1, y1, x2, y2)) {
 
-          println(s"1: ($x1,$y1); 2: ($x2,$y2)")
+          /*println(s"1: ($x1,$y1); 2: ($x2,$y2)")*/
 
           val xMed = (x1 + x2) / 2.0
           val yMed = (y1 + y2) / 2.0

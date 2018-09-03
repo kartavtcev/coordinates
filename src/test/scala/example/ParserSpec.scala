@@ -1,6 +1,5 @@
 package example
 
-
 import org.scalatest._
 
 import scala.util.Success
