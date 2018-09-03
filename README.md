@@ -1,5 +1,11 @@
 # coordinates
 
+### How to run this app with data
+- Replace reduced.csv empty placeholder with real data.
+- Run app with console arguments. I used IntelliJ IDEA.
+
+##
+
 Take-home Test test says: “This exercise should take you no more than two days.”.  
 Usually I spent at least first half the day thinking about design decisions of the future solution (not jumping straight to write code), as it’s (arguably) most crucial phase & recommended by many experienced engineers/architects. 
 
@@ -44,8 +50,6 @@ distance calculation should be linear in time, since it consists of a few O(1) p
 Sparseness calculation would use O(ln(n)) * n space, as it would store in v1,v2 whole List per each sum of recursive stacks/calls of the same level.
 
 
-
-
 ### Functional Programming thoughts on purity
 My design moved from pure FP to KISS principle.
 
@@ -58,7 +62,3 @@ or [nearby](https://github.com/softwaremill/akka-vs-scalaz/blob/master/core/src/
 Because I use Monix Synchronous Subscriber & subscribed to single Observable (i.e. single thread),
 mutable var/Array are OKay here (pure FP fans would disagree).  
 But having Monix Tasks could have allowed more parallel computing.  
-
-### How to run this app with data
-- Replace reduced.csv empty placeholder with real data.
-- Run app with console arguments. I used IntelliJ IDEA.
