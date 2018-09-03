@@ -53,12 +53,16 @@ Sparseness calculation would use O(ln(n)) * n space, as it would store in v1,v2 
 ### Functional Programming thoughts on purity
 My design moved from pure FP to KISS principle.
 
-TODO: I spent 2 days trying to figure out, in Processor.scala    
-how to replace "var" / Array (aka mutable Data Structure from Java) id1, id2;  
-WITH "val" Task[MVar[F]] (Monix) or Ref[IO, F] (Cats).  
-Failed (run out of time) so far to restructure code for Task/IO (deferred execution + effects). May be next time.  
-Samples of use of MVar & Task could be [this](https://github.com/softwaremill/akka-vs-scalaz/blob/master/core/src/main/scala/com/softwaremill/ratelimiter/UsingMonix.scala)
-or [nearby](https://github.com/softwaremill/akka-vs-scalaz/blob/master/core/src/main/scala/com/softwaremill/crawler/UsingMonix.scala), as well as documentation.  
-Because I use Monix Synchronous Subscriber & subscribed to single Observable (i.e. single thread),
-mutable var/Array are OKay here (pure FP fans would disagree).  
-But having Monix Tasks could have allowed more parallel computing.  
+Yet, Processor.scala has one Task[MVar[F]] (Monix) to allow concurrent synchronization & mutual exclusion (replace var).  
+(Cats has similar MVar[F[_], A]; and Ref[F[_], A].)
+```
+val meetups: MVar[List[Meet]]
+```  
+  
+
+```
+private val ids: Array[Option[PerId]] = Array(None, None)
+TODO: replace this mutable Array (vars) with MVar. Less critical than meetups MVar, since
+1. it's private
+2. because I use Monix Synchronous Subscriber & subscribed to single Observable (i.e. single thread)
+```

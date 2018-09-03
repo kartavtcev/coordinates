@@ -38,7 +38,7 @@ object MeetupApp extends StrictLogging {
           .collect {
             case Success(t) => Some(t)
             case Failure(e) =>
-              logger.error(e.toString)
+              logger.error(e.toString)    // Effect
               None
           }
           .collect { case Some(t) => t }

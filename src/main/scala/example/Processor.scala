@@ -1,26 +1,26 @@
 package example
 
 import com.typesafe.scalalogging.StrictLogging
-import monix.eval.Task
+import monix.eval.{MVar, Task}
+
 import scala.collection.immutable
 
-class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLogging {
+/*
+MVar is Monix's Pure concurrent queue of 1 element.
+I.e. synchronization & mutual exclusion
+It's required here, to access meetups List[Meet] externally & from findMeetupsAsync, which executes Algorithm.hasMeet concurrently.
+Task[MVar[F]] (Monix). (Cats has similar MVar[F[_], A]; and Ref[F[_], A].)
+*/
+class Processor(val meetups: MVar[List[Meet]])(implicit val ctx: monix.execution.Scheduler) extends StrictLogging {
 
-  /* TODO: I spent 2 days trying to figure out,
-   how to replace "var" / Array (aka mutable Data Structure from Java) id1, id2;
-   WITH "val" Task[MVar[F]] (Monix) or Ref[IO, F] (Cats).
-   Failed (run out of time) so far to restructure code for Task/IO (deferred execution + effects). May be next time.
-   Because I use Monix Synchronous Subscriber & subscribed to single Observable (i.e. single thread),
-   var/Array mutable are OKay here (Pure FP fans would disagree).
-   But having Monix Tasks could have allowed more parallel computing. */
-
-  private var ids: Array[Option[PerId]] = Array(None, None)
+/*
+ TODO: replace this mutable Array (vars) with MVar. Less critical than meetups MVar, since
+ 1. it's private
+ 2. because I use Monix Synchronous Subscriber & subscribed to single Observable (i.e. single thread)
+*/
   //var first : Option[PerId] = None
   //var second: Option[PerId] = None
-
-  private var meetups: List[Meet] = List.empty
-
-  def getMeetUps = meetups
+  private val ids: Array[Option[PerId]] = Array(None, None)
 
   def onNext(rec: Record): Unit = {
     val id = rec.id - 1
@@ -89,13 +89,23 @@ class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLoggi
       val id1 = ids(0).get
       val id2 = ids(1).get
 
-      Task { Algorithm.hasMet(id1.hours(0).hour, id1.hours(0).perMinCoords, id2.hours(0).perMinCoords)(Processor.meetUpDistance) }
-        .map { m => meetups = meetups ::: m }
+      for {
+        ms <- meetups.take
+        m <- Task { Algorithm.hasMet(id1.hours(0).hour, id1.hours(0).perMinCoords, id2.hours(0).perMinCoords)(Processor.meetUpDistance) }
+        _ <- meetups.put(ms ::: m)
+      } yield ()
     }
   }
 }
 
 object Processor {
+
+  def create(implicit ctx: monix.execution.Scheduler): Task[Processor] = {
+    for {
+      meetups <- MVar(List[Meet]())
+    } yield new Processor(meetups)
+  }
+
   val meetUpDistance = 5 // meters
   val nextHourThreshold = 10 // minutes
 }

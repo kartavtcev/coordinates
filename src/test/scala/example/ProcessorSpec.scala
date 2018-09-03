@@ -2,6 +2,8 @@ package example
 
 import org.scalatest._
 
+import scala.concurrent.duration.Duration
+
 class ProcessorSpec extends FlatSpec with Matchers {
   "Processor " should "run findMeetups on next hour record, and fill meetups collection." in {
 
@@ -17,15 +19,16 @@ class ProcessorSpec extends FlatSpec with Matchers {
 
 
     implicit val ctx = monix.execution.Scheduler.Implicits.global
-    val processor = new Processor
+    val processor = Processor.create.runSyncUnsafe(Duration.Inf)
 
     processor.onNext(r1Current)
     processor.onNext(r2)
-    processor.getMeetUps shouldBe List()
+    processor.meetups.read.runSyncUnsafe(Duration.Inf) shouldBe List()
 
     processor.onNext(r1Next)
     processor.onNext(r2Next)
-    processor.getMeetUps shouldBe List(Meet((Hour(16), Min(0)), Coordinate(111, 100, 1)))
+    processor.meetups.read.runSyncUnsafe(Duration.Inf) shouldBe List(Meet((Hour(16), Min(0)), Coordinate(111, 100, 1)))
+
   }
 }
 
