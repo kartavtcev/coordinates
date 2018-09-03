@@ -8,7 +8,6 @@ import scala.util.Success
 class ParserSpec extends FlatSpec with Matchers {
   "Parser " should "parse input data string to correct DTO" in {
 
-    //"hello" shouldEqual "hello"
     val id1 = (1, "600dfbe2")
     val id2 = (2, "5e7b40e1")
     val parser = new Parser(id1, id2)

@@ -81,7 +81,7 @@ object Algorithm {
 
         if(isDistanceMeet(x1, y1, x2, y2)) {
 
-          /*println(s"1: ($x1,$y1); 2: ($x2,$y2)")*/
+          println(s"1: ($x1,$y1); 2: ($x2,$y2)")
 
           val xMed = (x1 + x2) / 2.0
           val yMed = (y1 + y2) / 2.0
@@ -95,7 +95,7 @@ object Algorithm {
     val reducedFloors = singleFloorPerOrderedMinute(firstId, secondId)
     val sparsened : List[((Min, Floor), AvgXY, AvgXY)] =
       sparsenessAndEqualFloorIntervals(reducedFloors._1, reducedFloors._2)
-        .map { case (key1, key2) => (key1, firstId(key1), secondId(key2)) }
+        .map { case (key1, key2) => ((Min((key1._1.value+key2._1.value)/2), key1._2), firstId(key1), secondId(key2)) }
 
     distanceCheck(sparsened)
   }
