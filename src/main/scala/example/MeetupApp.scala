@@ -15,8 +15,8 @@ object MeetupApp extends StrictLogging {
 
   def main(args: Array[String]) = {
 
-    if(args.length != 2) {    // https://stackoverflow.com/questions/2066307/how-do-you-input-commandline-argument-in-intellij-idea
-      println("Input 2 ids.")
+    if(args.length != 2 || args(0) == args(1)) {    // https://stackoverflow.com/questions/2066307/how-do-you-input-commandline-argument-in-intellij-idea
+      println("Input 2 different ids.")
     } else {
       val t0 = System.nanoTime()
 
@@ -55,7 +55,3 @@ object MeetupApp extends StrictLogging {
     }
   }
 }
-/*
-8458 records for 2 IDs: 655f7545, 78b85537
-NOT FOUND INTERSECTION: 285d22e4 / 74d917a1
-*/

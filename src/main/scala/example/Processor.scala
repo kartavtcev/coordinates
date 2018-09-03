@@ -7,10 +7,12 @@ import scala.collection.immutable
 class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLogging {
 
   /* TODO: I spent 2 days trying to figure out,
-   how to replace "var" / Array (aka mutable Data Structure from Java) id1, id2 with "val" Task[MVar[F]] (Monix) or Ref[IO, F] (Cats).
+   how to replace "var" / Array (aka mutable Data Structure from Java) id1, id2;
+   WITH "val" Task[MVar[F]] (Monix) or Ref[IO, F] (Cats).
    Failed (run out of time) so far to restructure code for Task/IO (deferred execution + effects). May be next time.
-   Because I use Monix Synchronous Subscriber & subscribed to single Observable, var/Array mutable are OKay here (Pure FP fans would disagree).
-   But having Monix Task could have allowed more parallel computing. */
+   Because I use Monix Synchronous Subscriber & subscribed to single Observable (i.e. single thread),
+   var/Array mutable are OKay here (Pure FP fans would disagree).
+   But having Monix Tasks could have allowed more parallel computing. */
 
   private var ids: Array[Option[PerId]] = Array(None, None)
   //var first : Option[PerId] = None
@@ -80,11 +82,16 @@ class Processor(implicit val ctx: monix.execution.Scheduler) extends StrictLoggi
   }
 
   def findMeetupsAsync: Task[Unit] = {
-    val id1 = ids(0).get
-    val id2 = ids(1).get
 
-    Task { Algorithm.hasMet(id1.hours(0).hour, id1.hours(0).perMinCoords, id2.hours(0).perMinCoords)(Processor.meetUpDistance) }
-      .map { m => meetups = meetups ::: m }
+    if(ids(0).isEmpty || ids(1).isEmpty) {
+      Task {Unit}
+    } else {
+      val id1 = ids(0).get
+      val id2 = ids(1).get
+
+      Task { Algorithm.hasMet(id1.hours(0).hour, id1.hours(0).perMinCoords, id2.hours(0).perMinCoords)(Processor.meetUpDistance) }
+        .map { m => meetups = meetups ::: m }
+    }
   }
 }
 
