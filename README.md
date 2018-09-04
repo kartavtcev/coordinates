@@ -54,7 +54,7 @@ Sparseness calculation would use O(ln(n)) * n space, as it would store in v1,v2 
 My design moved from pure FP to KISS principle.
 
 Yet, Processor.scala has one Task[MVar[F]] (Monix) to allow concurrent synchronization & mutual exclusion (replace var).  
-(Cats has similar MVar[F[_], A]; and Ref[F[_], A].)
+(Cats has similar MVar[F[_], A]; and Ref[F[_], A])
 ```
 val meetups: MVar[List[Meet]]
 ```  
@@ -66,3 +66,5 @@ TODO: replace this mutable Array (vars) with MVar. Less critical than meetups MV
 1. it's private
 2. because I use Monix Synchronous Subscriber & subscribed to single Observable (i.e. single thread)
 ```
+
+TODO: DI with CAKE pattern?
